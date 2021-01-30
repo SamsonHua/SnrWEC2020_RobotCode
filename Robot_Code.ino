@@ -52,9 +52,11 @@ void setup()
 
 void loop()
 {
+  //=========================================================
+  //Safety Check - Checks to see if there is any interference
+  //=========================================================
 
-  
-  //Creates State Object
+  //Changes state based
   switch (current_state){
     case stop:
       //All the code the robot should be running when stopped
