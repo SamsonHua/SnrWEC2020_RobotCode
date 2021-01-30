@@ -1,177 +1,186 @@
-#define LT_Sides digitalRead(2) //IR sensor (left and right)
-#define LT_M digitalRead(3) //IR Sensor (middle)
+//===================================================================
+//===================================================================
+//  Masonville Dynamics (Warman) - Snr Design WEC 2021 Source Code
+//  Developed by Mason K., Samson H., Adrian K, Owen K.,
+//  Jan 30th, 2021
+//===================================================================
+//===================================================================
 
-// lineStandard is the level to detect 
-// if the sensor is on the line or not. If the sensor value is less than this
-// the sensor it is above a white line.
-//
-//motor A
-#define right_motor_1 4
-#define right_motor_2 5
-//motor b
-#define left_motor_1 6
-#define left_motor_2 5 // same pin, shared motor
-//Belt motor
-#define belt_motor_1 7
-#define belt_motor_2 7
-#define belt_motor_3 8
+//===================================================================
+// Pin Declarations
+//===================================================================
+
+//Motors
+#define leftMotor 11
+#define hMotor 12
+#define rightMotor 13
+#define revolverMotor 6
+#define extenderMotor 5
+
+//Sensors
+#define leftEcho A0
+#define leftTrig 4
+#define rightEcho A1
+#define rightTrig 3
+#define forwardEcho A2
+#define forwardTrig 2
+#define backwardEcho A3
+#define backwardTrig 7
+
+//Initialized Values
 int Room;
-
-
-//Ultrasonic sensor
-#define echoPin 9 // attach pin D2 Arduino to pin Echo
-#define trigPin 10 //attach pin D3 Arduino to pin Trig
-
-// defines variables
 long duration; // variable for the duration of sound wave travel
 int distance; // variable for the distance measurement
 int safe_distance = 5; // safe distance set to 5 cm
+bool safe = true; //Safety declaration
 
-//======================
-//Finite State Machine 
-//======================
+//=========================================================
+//Object Detection Variables
+//=========================================================
+
+#define LT_Sides digitalRead(2) //IR sensor (left and right)
+#define LT_M digitalRead(3) //IR Sensor (middle)
+
+//=========================================================
+//Finite State Machine
+//=========================================================
 //Enumeration for States (Stop, Idle, And Run)
+
 enum RobotState {stop, idle, run};
-static RobotState current_state = stop;
+enum RobotState current_state = stop;
+
+//=========================================================
+//Functions
+//=========================================================
+
+//checkObstacle() - This code determines whether there is any obstacles and returns true or false
+bool checkObstacle(){
+
+  //State to detect obstacle interference
+  bool rightDetect = false;
+  bool leftDetect = false;
+  bool forwardDetect = false;
+  bool backwardDetect = false;
+
+  //Check each of the four sensors to determine whether there is any obstacle interference
+  
+  //Uses a helper function to ping
+  rightDetect = ping(rightEcho, rightTrig);
+  leftDetect = ping(leftEcho, leftTrig);
+  forwardDetect = ping(forwardEcho, forwardTrig);
+  backwardDetect = ping(backwardEcho, backwardTrig);
+
+  //I am bad at bitshifting, so I will use two nested OR loops
+  if((rightDetect||leftDetect)||(forwardDetect || backwardDetect)){
+    return false;
+  }else{
+    return true;
+  }
+}
+
+//ping() is a helper function for checkObstacle(), it takes in a trigger and echo and returns whether there is an obstacle interference
+bool ping(int echo, int trigger){
+  int duration = 0;
+  
+  //Ping ultrasonic signal
+  digitalWrite(trigger, LOW);
+  delayMicroseconds(5);
+  digitalWrite(trigger, HIGH);
+  delay(10);
+  digitalWrite(trigger, LOW);
+
+  //Determine the time for bounce
+  pinMode(echo, INPUT);
+  duration = pulseIn(echo, HIGH);
+
+  //Divide by duration by 58 to get cm
+  duration = duration/58;
+
+  //If distance is less than 25cm, stop the robot to be safe
+  if(duration < 50){
+    return true;
+  }
+  else{
+    return false;
+  }
+
+}
+
+
+
+//=========================================================
+//=========================================================
+//                        Setup
+//=========================================================
+//=========================================================
 
 void setup()
 { 
-  pinMode(right_motor_1, OUTPUT);
-  pinMode(right_motor_2, OUTPUT);
-  pinMode(left_motor_1, OUTPUT);
-  pinMode(left_motor_2, OUTPUT);
-  pinMode(trigPin, OUTPUT); // Sets the trigPin as an OUTPUT
-  pinMode(echoPin, INPUT); // Sets the echoPin as an INPUT
 
-  // IR sensor readings for diagnostics
-  Serial.begin(9600);
-  Serial.println("IR Sensor Readings:: ");
-  delay(1000);
-  
+//Chooses a 9600 baud rate
+Serial.begin(9600);
+
+//Motor Pin Declarations
+pinMode(leftMotor, OUTPUT);
+pinMode(hMotor, OUTPUT);
+pinMode(rightMotor, OUTPUT);
+pinMode(revolverMotor, OUTPUT);
+pinMode(extenderMotor, OUTPUT);
+
+//Sensor Pin Declarations
+pinMode(leftEcho, INPUT);
+pinMode(rightEcho, INPUT);
+pinMode(forwardEcho, INPUT);
+pinMode(backwardEcho, INPUT);
+pinMode(leftTrig, OUTPUT);
+pinMode(rightTrig, OUTPUT);
+pinMode(forwardTrig, OUTPUT);
+pinMode(backwardTrig, OUTPUT);
+
 }
+
+//=========================================================
+//=========================================================
+//                        Loop
+//=========================================================
+//=========================================================
 
 void loop()
 {
   //=========================================================
   //Safety Check - Checks to see if there is any interference
   //=========================================================
+  safe = checkObstacle();
 
-  //Changes state based
+  //Enums are buggy in arduino so we had to use a boolean lol
+  if(safe){
+    current_state = idle;
+  }else{
+    current_state = stop;
+  }
+  
+
+  //===============================================================================
+  //Command Check - Checks to see if there is any instructions from the transmitter
+  //===============================================================================
+  // TODO: Implement reciever and transmitter code in here
+
+  //Changes state based on the two checks
   switch (current_state){
     case stop:
       //All the code the robot should be running when stopped
-
+      Serial.println("Robot is currently stopped");
       break;
     case idle:
       //All the code the robot should run when idle
-
+      Serial.println("Robot await instructions");
       break;
     case run:
-
+      //
 
       break;
 
   }
 
-   // Clears the trigPin condition
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(5);
-  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-  // Reads the echoPin, returns the sound wave travel time in microseconds
-  duration = pulseIn(echoPin, HIGH);
-  // Calculating the distance
-  distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
-  
-Serial.println("Which room do you want it to be delivered to?"); //Prompt User for Input value for the room number
-  while (Serial.available() == 0) {
-    // Wait for User to Input Data
-  }
-  Room = Serial.parseInt(); //Read the data the user has inputted
-  if (safe_distance < 5)
-  {
-    back(distance, safe_distance);
-  }
-  else
-  {
-    forward(Room);
-  }
-  Serial.print("The user has choosen the room number:");
-  delay(0);  // add a delay to decrease sensitivity.
 }
 
-void delivery(int Room) {
-  int counter = 0;
-  counter = counter + 1;
-  if (counter <= round(Room/2 + 0.1))
-    forward(Room);
-  else
-  {
-  digitalWrite(right_motor_1, LOW);
-  digitalWrite(right_motor_2, LOW);
-  digitalWrite(left_motor_1, LOW);
-  digitalWrite(left_motor_2, LOW);
-  digitalWrite(belt_motor_1, HIGH);
-  digitalWrite(belt_motor_2, HIGH);
-  analogWrite(10, 255);
-  if ( (Room % 2) == 0) // Front horizontal conveyor engages to move right
-  {
-  digitalWrite(belt_motor_3, HIGH);
-  analogWrite(11, 255); // PWM analog reading to have it run at max speed of 255
-  }
-  else // Front horizontal conveyor engages to move left
-  {
-  digitalWrite(belt_motor_3, LOW);
-  analogWrite(11, 255); // PWM analog reading to have it run at max speed of 255
-  }
-  }
-  }
-  
-
-void forward(int Room) { // Both Motor engages to move forward
-  while ((LT_M))
-  {
-  digitalWrite(right_motor_1, HIGH);
-  digitalWrite(right_motor_2, LOW);
-  digitalWrite(left_motor_1, HIGH);
-  digitalWrite(left_motor_2, LOW);
-  analogWrite(11, 255); // PWM analog reading to have it run at max speed of 255
-  if(LT_Sides)
-  {
-  delivery(Room);
-  }
-  }
-}
-
-void back(float distance, int safe_distance){
-  while (distance < safe_distance)
-  {
-  digitalWrite(right_motor_1, LOW);
-  digitalWrite(right_motor_2,HIGH); // Reversed Motor
-  digitalWrite(left_motor_1, LOW);
-  digitalWrite(left_motor_2, HIGH); // Reversed motor
-    digitalWrite(belt_motor_1, HIGH); // Intake motor to collect items
-  digitalWrite(belt_motor_2, HIGH); // Intake motor to collect items
-  analogWrite(11, 255); // PWM analog reading to have it run at max speed of 255
-  }
-}
-
-void moving_back(){
-  if (distance > safe_distance)
-  {
-  digitalWrite(right_motor_1, LOW);
-  digitalWrite(right_motor_2,HIGH);
-  digitalWrite(left_motor_1, LOW);
-  digitalWrite(left_motor_2, HIGH);
-  analogWrite(11, 255); // PWM analog reading to have it run at max speed of 255
-  }
-  else if (distance < safe_distance)
-  {
-  digitalWrite(right_motor_1, LOW);
-  digitalWrite(right_motor_2, LOW);
-  digitalWrite(left_motor_1, LOW);
-  digitalWrite(left_motor_2, LOW);  
-  }
-}
