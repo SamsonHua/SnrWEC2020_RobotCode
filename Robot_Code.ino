@@ -27,6 +27,13 @@ long duration; // variable for the duration of sound wave travel
 int distance; // variable for the distance measurement
 int safe_distance = 5; // safe distance set to 5 cm
 
+//======================
+//Finite State Machine 
+//======================
+//Enumeration for States (Stop, Idle, And Run)
+enum RobotState {stop, idle, run};
+static RobotState current_state = stop;
+
 void setup()
 { 
   pinMode(right_motor_1, OUTPUT);
@@ -40,10 +47,30 @@ void setup()
   Serial.begin(9600);
   Serial.println("IR Sensor Readings:: ");
   delay(1000);
+  
 }
 
 void loop()
 {
+
+  
+  //Creates State Object
+  switch (current_state){
+    case stop:
+      //All the code the robot should be running when stopped
+
+      break;
+    case idle:
+      //All the code the robot should run when idle
+
+      break;
+    case run:
+
+
+      break;
+
+  }
+
    // Clears the trigPin condition
   digitalWrite(trigPin, LOW);
   delayMicroseconds(5);
